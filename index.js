@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const server = express()
 const cors = require("cors")
+const jwt = require('jsonwebtoken')
 
 const Users = require("./users/users-model.js")
 const passwordHash = require("./middlewares/password-hash.js")
@@ -10,7 +11,7 @@ const session = require("express-session")
 
 
 const sessionConfig = {
-    name: "chocochip",
+    name: "hamster",
     secret: process.env.SESSION_SECRET || "keep it secret, keep it safe",
     cookie: {
         maxAge: 1000 * 60 * 60,
@@ -19,6 +20,17 @@ const sessionConfig = {
     },
     resave: false, // resave cookie on changes -Luis
     saveUninitialized: true // GDPR Complince, to show the new users if they want to save the cookie or not!
+}
+
+function generateToken(user) {
+    const payload = {
+        username: user.username
+    }
+    const secret = 'Keep it lowkey'
+    const options = {
+        expiresIn: '1d'
+    }
+    return jwt.sign(payload, secret, options)
 }
 
 server.use(express.json())
@@ -65,8 +77,9 @@ server.post("/api/login", (req, res) => {
         .then(user => {
             req.session.user = user
             if (user && bcrypt.compareSync(password, user.password)) {
+                const token = generateToken(user)
                 res
-                    .json({ message: `Welcome ${user.username}!` })
+                    .json({ message: token })
             } else {
                 res
                     .status(401)
