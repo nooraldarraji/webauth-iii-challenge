@@ -2,12 +2,13 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const server = express()
 const cors = require("cors")
-const jwt = require('jsonwebtoken')
-
+const generateToken = require('./auth/jwt.js')
 const Users = require("./users/users-model.js")
 const passwordHash = require("./middlewares/password-hash.js")
 const sessionCookie = require("./middlewares/session-cookie.js")
 const session = require("express-session")
+const jwtMiddleware = require('./middlewares/jsonwebtoken.js')
+
 
 
 const sessionConfig = {
@@ -20,17 +21,6 @@ const sessionConfig = {
     },
     resave: false, // resave cookie on changes -Luis
     saveUninitialized: true // GDPR Complince, to show the new users if they want to save the cookie or not!
-}
-
-function generateToken(user) {
-    const payload = {
-        username: user.username
-    }
-    const secret = 'Keep it lowkey'
-    const options = {
-        expiresIn: '1d'
-    }
-    return jwt.sign(payload, secret, options)
 }
 
 server.use(express.json())
@@ -93,7 +83,7 @@ server.post("/api/login", (req, res) => {
         })
 })
 
-server.get("/api/users", passwordHash, sessionCookie, (req, res) => {
+server.get("/api/users", passwordHash, sessionCookie, jwtMiddleware, (req, res) => {
     Users.find()
         .then(users => {
             res.json(users)
